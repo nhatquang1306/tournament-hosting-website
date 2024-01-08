@@ -32,7 +32,7 @@ public class TournamentController {
     }
 
     @PreAuthorize("hasRole('ROLE_USER') OR hasRole('ROLE_ORGANIZER')")
-    @RequestMapping(path = "/team/{id}")
+    @RequestMapping(path = "/team/{id}/")
     public Tournament getTournamentByTeamId(@PathVariable int id) {
         return dao.getByTeamId(id);
     }
