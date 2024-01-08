@@ -1,16 +1,4 @@
-#!/bin/bash
-
-export PGPASSWORD='postgres1'
-BASEDIR=$(dirname $0)
-DATABASE=tournament-db
-
-export PGPORT=15432
-psql -U postgres -p $PGPORT -f "$BASEDIR/dropdb.sql" &&
-createdb -U postgres -p $PGPORT $DATABASE &&
-psql -U postgres -d $DATABASE -p $PGPORT -f "$BASEDIR/schema.sql" &&
-psql -U postgres -d $DATABASE -p $PGPORT -f "$BASEDIR/data.sql" &&
-psql -U postgres -d $DATABASE -p $PGPORT -f "$BASEDIR/user.sql"
-
+##!/bin/bash
 #export PGPASSWORD='postgres1'
 #BASEDIR=$(dirname $0)
 #DATABASE=tournament-db
@@ -19,4 +7,11 @@ psql -U postgres -d $DATABASE -p $PGPORT -f "$BASEDIR/user.sql"
 #psql -U postgres -d $DATABASE -f "$BASEDIR/schema.sql" &&
 #psql -U postgres -d $DATABASE -f "$BASEDIR/data.sql" &&
 #psql -U postgres -d $DATABASE -f "$BASEDIR/user.sql"
+
+export PGPASSWORD='cg3aDe6b*E*1C5E3Ad16aGcCAAf-bcaf'
+BASEDIR=$(dirname $0)
+psql -h roundhouse.proxy.rlwy.net -U postgres -p 27906 -d railway -f "$BASEDIR/dropdb.sql" &&
+psql -h roundhouse.proxy.rlwy.net -U postgres -p 27906 -d railway -f "$BASEDIR/schema.sql" &&
+psql -h roundhouse.proxy.rlwy.net -U postgres -p 27906 -d railway -f "$BASEDIR/data.sql" &&
+psql -h roundhouse.proxy.rlwy.net -U postgres -p 27906 -d railway -f "$BASEDIR/user.sql"
 

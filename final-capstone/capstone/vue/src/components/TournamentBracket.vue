@@ -14,7 +14,7 @@
         </div>
     </div>
     <div v-if="bracketMessage != ''" style="margin-top: 10px; color: #dd6b6b; font-size: 14px">{{ bracketMessage }}</div>
-    <div class="top3" v-if="tournament.status == 'Finished' && !reset">
+    <div class="top3" v-if="tournament.status == 'Finished'">
         <div class="medal">
             <img src="../assets/images/1st.svg" alt="first-place-medal.png">
             <p>{{ first }}</p>
@@ -29,7 +29,7 @@
         </div>
     </div>
     
-    <div class="bracket" :class="{'rematch': matches['round0'].length > 0}" v-if="matches['round1'].length > 0 && !reset">
+    <div class="bracket" :class="{'rematch': matches['round0'].length > 0}" v-if="matches['round1'].length > 0" >
         <div class="round" v-for="(round, key) in matches" :class="key" :key="key">
             <div class="match" v-for="match in round" :key="match.match_id">
                 <div class="team" v-if="!loading" :class="{'winner1': match.winner_id == match.first_team_id && match.winner_id != 0, 'loser1': match.winner_id == match.second_team_id && match.winner_id != 0,}">
@@ -113,7 +113,6 @@ export default {
             matches: {},
             teams: {},
             teamList: [],
-            reset: false
         }
     },
     created() {
@@ -131,11 +130,9 @@ export default {
         },
         resetTournament() {
             TournamentService.resetTournament(this.tournament.tournament_id).then(response => {
-                if (response.status == 200 || response.status == 201) {
-                    this.reset = true;
+                if (response.status == 200 || response.status == 201) {           
                     this.resetMatches();
                     this.currentRound = null;
-                    this.reset = false;
                     // eslint-disable-next-line vue/no-mutating-props
                     this.tournament.status = 'Upcoming';
                 } 
@@ -186,7 +183,7 @@ export default {
             let thirdMatch = this.matches["round-4"][0];
             this.third = this.teams[thirdMatch.winner_id == thirdMatch.first_team_id ? thirdMatch.second_team_id : thirdMatch.first_team_id];    
         },
-        importMatches() {
+        importMatches() {           
             MatchService.getAllMatches(this.$route.params.tournamentId).then(response => {
                 let importedMatches = response.data;
                 importedMatches.forEach(match => {
