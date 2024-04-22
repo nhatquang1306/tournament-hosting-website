@@ -24,30 +24,35 @@ public class TeamController {
     @Autowired
     private TeamDAO dao;
 
+    // get all teams for a tournament
     @RequestMapping(path="/tournaments/{tournamentId}/allTeams", method = RequestMethod.GET)
     public List<Team> getAllTeams(@PathVariable int tournamentId) {
         List<Team> allTeams = dao.getAllTeams(tournamentId);
         return allTeams;
     }
 
+    // filter teams by search term for a tournament
     @RequestMapping(path = "/tournaments/{tournamentId}/filter", method = RequestMethod.GET)
     public List<Team> filterTeams(@PathVariable int tournamentId, @RequestParam String searchTerm) {
         List<Team> filteredList = dao.filterTeams(tournamentId, searchTerm);
         return filteredList;
     }
 
+    // get team by team id
     @RequestMapping(path = "/teams/{teamId}", method = RequestMethod.GET)
     public Team selected (@PathVariable int teamId) {
         Team selectedTeam = dao.getTeamById(teamId);
         return selectedTeam;
     }
 
+    // filter teams by search term
     @RequestMapping(path = "/teams/filter", method = RequestMethod.GET)
     public List<Team> selected (@RequestParam String searchTerm) {
         List<Team> filteredList = dao.getTeamByName(searchTerm);
         return filteredList;
     }
 
+    // add team to a tournament
     @RequestMapping(path = "/tournaments/{tournamentId}/addTeam", method = RequestMethod.POST)
     public void addTeam(@PathVariable int tournamentId, @RequestBody Team team, @RequestParam boolean openToPublic, Principal principal) {
         String createdBy = principal.getName();
@@ -60,11 +65,14 @@ public class TeamController {
         }
 
     }
+
+    // edit team info as leader
     @RequestMapping(path = "/teams/editTeam", method = RequestMethod.PUT)
     public void editTeam(@RequestBody Team team) {
         dao.editTeam(team);
     }
 
+    // remove team member as leader
     @RequestMapping(path = "/teams/{teamId}/members/{userId}", method = RequestMethod.DELETE)
     public ResponseEntity<String> removeTeamMember(@PathVariable int teamId, @PathVariable int userId, Principal principal) {
         String teamCaptainUsername = principal.getName(); // Get the username of the logged-in user
@@ -78,16 +86,21 @@ public class TeamController {
         }
     }
 
+    // filter open teams within a tournament
     @RequestMapping(path = "/tournaments/{tournamentId}/filterOpen", method = RequestMethod.GET)
     public List<Team> filterOpenTeams(@PathVariable int tournamentId, @RequestParam String searchTerm) {
         List<Team> filteredList = dao.filterOpenTeams(tournamentId, searchTerm);
         return filteredList;
     }
+
+    // remove a team as organizer
     @PreAuthorize("hasRole('ROLE_ORGANIZER')")
     @RequestMapping(path = "teams/{teamId}/remove", method = RequestMethod.PUT)
     public void remove(@RequestBody Tournament tournament, @PathVariable int teamId) {
         dao.removeTeam(tournament.getStatus(), tournament.getTournamentId(), teamId);
     }
+
+    // assign new captain as team leader
     @PreAuthorize("hasRole('ROLE_USER')")
     @RequestMapping(path = "teams/{teamId}/assign", method = RequestMethod.PUT)
     public void assignCaptain(@PathVariable int teamId, @RequestParam String username) {

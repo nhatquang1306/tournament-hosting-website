@@ -32,6 +32,7 @@ public class AuthenticationController {
         this.userDao = userDao;
     }
 
+    // login endpoint
     @RequestMapping(value = "/login", method = RequestMethod.POST)
     public ResponseEntity<LoginResponseDto> login(@Valid @RequestBody LoginDto loginDto) {
 
@@ -49,6 +50,7 @@ public class AuthenticationController {
         return new ResponseEntity<>(new LoginResponseDto(jwt, user), httpHeaders, HttpStatus.OK);
     }
 
+    // register endpoint
     @ResponseStatus(HttpStatus.CREATED)
     @RequestMapping(value = "/register", method = RequestMethod.POST)
     public void register(@Valid @RequestBody RegisterUserDto newUser) {

@@ -17,7 +17,7 @@ public class JdbcMatchDao implements MatchDao {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-
+    // get a match by match id
     @Override
     public Match getMatch(int matchId) {
         Match match = new Match();
@@ -29,6 +29,7 @@ public class JdbcMatchDao implements MatchDao {
         return match;
     }
 
+    // get all matches for a tournament
     @Override
     public List<Match> getAllMatches(int tournamentId) {
         List<Match> matches = new ArrayList<>();
@@ -40,12 +41,18 @@ public class JdbcMatchDao implements MatchDao {
         return matches;
     }
 
+    // update match info
     @Override
     public List<Match> updateMatch(Match match) {
+        // set the score and winner for the match
         String sql1 = "UPDATE matches SET first_score = ?, second_score = ?, winner_id = ? WHERE match_id = ?";
         jdbcTemplate.update(sql1, match.getFirstScore(), match.getSecondScore(), match.getWinnerId() == 0 ? null : match.getWinnerId(), match.getMatchId());
-        int point = (Integer.parseInt(match.getMatchFormat().replaceAll("^[^\\d]+", "")) + 1)/ 2;
-        if (match.getFirstScore() != point && match.getSecondScore() != point) return null;
+
+        // if there's no winner, return
+        int winningPoint = (Integer.parseInt(match.getMatchFormat().replaceAll("^[^\\d]+", "")) + 1)/ 2;
+        if (match.getFirstScore() != winningPoint && match.getSecondScore() != winningPoint) return null;
+
+        // if there's a winner, calculate who goes on to next match by using the bracket class
         List<Match> allMatches = getAllMatches(match.getTournamentId());
         Bracket bracket = new Bracket(allMatches);
         String sql2 = "UPDATE matches SET first_team_id = ?, second_team_id = ? WHERE match_id = ?";
@@ -58,14 +65,18 @@ public class JdbcMatchDao implements MatchDao {
 
     }
 
+    // update final match info
     @Override
     public Match finalMatch(Match match) {
         String sql1 = "UPDATE matches SET winner_id = ?, first_score = ?, second_score = ? WHERE match_id = ?";
         jdbcTemplate.update(sql1, match.getWinnerId() == 0 ? null : match.getWinnerId(), match.getFirstScore(), match.getSecondScore(), match.getMatchId());
+
+        // if the winner is from the winner bracket, set tournament status to finished
         if (match.getWinnerId() == match.getFirstTeamId() || (match.getWinnerId() != 0 && match.getRound() == 0)) {
             String sql2 = "UPDATE tournament SET status = ? WHERE tournament_id = ?";
             jdbcTemplate.update(sql2, "Finished", match.getTournamentId());
-        } else if (match.getWinnerId() != 0){
+        // if the winner is from the loser bracket, add another match to the tournament for the final round
+        } else if (match.getWinnerId() != 0) {
             int loserId = match.getWinnerId() == match.getFirstTeamId() ? match.getSecondTeamId() : match.getFirstTeamId();
             String sql3 = "INSERT INTO matches(tournament_id, first_team_id, second_team_id, match_format, round, date_and_time) VALUES " +
                     "(?, ?, ?, ?, ?, ?) RETURNING match_id;";

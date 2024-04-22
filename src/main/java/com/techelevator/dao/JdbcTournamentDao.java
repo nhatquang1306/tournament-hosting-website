@@ -18,6 +18,7 @@ public class JdbcTournamentDao implements TournamentDao{
         this.jdbcTemplate = jdbcTemplate;
     }
 
+    // create a tournament with name, prize, time, location, game type, entry fee, format, description
     @Override
     public Tournament createTournament(Tournament tournament) {
         String sql = "INSERT INTO tournament(tournament_name, status, prize, date_and_time, location, game, entry_fee, format, rules, tournament_owner, description) " +
@@ -27,9 +28,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return getTournament(id);
     }
 
-
-
-
+    // get tournament by tournament id
     @Override
     public Tournament getTournament(int id) {
         Tournament tournament = new Tournament();
@@ -41,6 +40,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournament;
     }
 
+    // get tournament by team id
     @Override
     public Tournament getByTeamId(int id) {
         Tournament tournament = new Tournament();
@@ -52,6 +52,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournament;
     }
 
+    // generate bracket for a tournament using the bracket class
     @Override
     public void generateBracket(int id) {
         String sql1 = "SELECT team_id FROM tournament_team WHERE tournament_id = ?;";
@@ -70,6 +71,7 @@ public class JdbcTournamentDao implements TournamentDao{
         }
     }
 
+    // get all tournaments in the database
     @Override
     public List<Tournament> getAllTournaments() {
         List<Tournament> tournaments = new ArrayList<>();
@@ -81,6 +83,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournaments;
     }
 
+    // update tournament info as organizer
     @Override
     public Tournament updateTournament(Tournament tournament) {
         String sql = "UPDATE tournament SET tournament_name = ?, prize = ?, date_and_time = ?, location = ?, game = ?, entry_fee = ? " +
@@ -90,15 +93,17 @@ public class JdbcTournamentDao implements TournamentDao{
         return getTournament(tournament.getTournamentId());
     }
 
-
+    // start tournament as organizer
     @Override
     public void startTournament(int id) {
-        String sql = "UPDATE tournament SET status = ? WHERE tournament_id = ?";
-        String sql2 = "UPDATE team_request SET status = 'declined' WHERE status = 'Pending' AND team_id IN (SELECT team_id FROM tournament_team WHERE tournament_id = ?)";
-        jdbcTemplate.update(sql, "Active", id);
-        jdbcTemplate.update(sql2, id);
+        String statusSql = "UPDATE tournament SET status = ? WHERE tournament_id = ?";
+        // delete all invites of teams in the tournaments
+        String deleteSql = "UPDATE team_request SET status = 'declined' WHERE status = 'Pending' AND team_id IN (SELECT team_id FROM tournament_team WHERE tournament_id = ?)";
+        jdbcTemplate.update(statusSql, "Active", id);
+        jdbcTemplate.update(deleteSql, id);
     }
 
+    // filter tournaments by game type
     @Override
     public List<Tournament> getByGame(String game) {
         List<Tournament> tournaments = new ArrayList<>();
@@ -110,6 +115,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournaments;
     }
 
+    // filter tournaments by status
     @Override
     public List<Tournament> getByStatus(String status) {
         List<Tournament> tournaments = new ArrayList<>();
@@ -121,6 +127,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournaments;
     }
 
+    // get a number of featured tournament (active tournaments will show up first)
     @Override
     public List<Tournament> getFeatured(int number) {
         List<Tournament> tournaments = new ArrayList<>();
@@ -132,6 +139,7 @@ public class JdbcTournamentDao implements TournamentDao{
         return tournaments;
     }
 
+    // reset tournament and delete all matches as organizer
     @Override
     public void resetTournament(int id) {
         String sql = "DELETE FROM matches WHERE tournament_id = ?;" +

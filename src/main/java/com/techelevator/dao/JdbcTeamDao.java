@@ -23,7 +23,7 @@ public class JdbcTeamDao implements TeamDAO{
         template = new JdbcTemplate(dataSource);
     }
 
-    // 1. this is to be used to list all teams in the database
+    // get all teams in a tournament
     @Override
     public List<Team> getAllTeams(int tournamentId) {
         List<Team> teamList = new ArrayList<>();
@@ -45,7 +45,7 @@ public class JdbcTeamDao implements TeamDAO{
         return teamList;
     }
 
-    // 2. select a team by Id
+    // find a team by team id
     @Override
     public Team getTeamById(int teamId) {
         String sql = "SELECT * FROM team WHERE team_id = ?";
@@ -61,8 +61,7 @@ public class JdbcTeamDao implements TeamDAO{
         return team;
     }
 
-    // 3. this is similar to the next method, but this can be used on any team
-    // regardless of  which tournament they are in
+    // filter teams for search term in the name
     @Override
     public List<Team> getTeamByName(String searchTerm) {
         List<Team> teamList = new ArrayList<>();
@@ -80,7 +79,7 @@ public class JdbcTeamDao implements TeamDAO{
         return teamList;
     }
 
-    // 4. this is used to search through the teams within a specific tournament
+    // filter teams by search term for a specific tournament
     @Override
     public List<Team> filterTeams(int tournament_id, String searchTerm) {
         List<Team> teamList = new ArrayList<>();
@@ -102,51 +101,44 @@ public class JdbcTeamDao implements TeamDAO{
         return teamList;
     }
 
-    // 5. When this method is used, the team is created, The logged in user is automatically assigned to the team
-    // the "createdBy" column for team automatically is set to match the username of who created that team
+    // create a team as the team leader
     @Override
     public void addTeam(int tournamentId, Team newTeam, String createdBy, boolean openToPublic) {
         int teamId = 0;
         String teamName = newTeam.getTeamName();
-        System.out.println(teamId + " " + teamName);
-
+        // create team with the logged in user as the leader
         String sql = "INSERT INTO team (team_name, created_by, open_to_public) VALUES (?, ?, ?) RETURNING team_id";
-
         try {
             teamId = template.queryForObject(sql, Integer.class, teamName, createdBy, openToPublic);
         } catch (Exception e) {
             if (e.getMessage().contains("value too long for type character varying"))
             throw new Error("Team name cannot exceed 15 characters.");
         }
+
+        // assign team to a tournament
         String sql2 = "INSERT INTO tournament_team (tournament_id, team_id) VALUES (?, ?); " +
                 "UPDATE users SET team_id = ? WHERE username = ?; ";
         template.update(sql2, tournamentId, teamId, teamId, createdBy);
 
-
-
+        // delete all join requests sent by the leader
         String sql3 = "DELETE FROM team_request WHERE status = 'join_request_pending' AND sender_id = (SELECT user_id FROM users WHERE username = ?);";
         template.update(sql3, createdBy);
 
-        // Check if there are 8 teams in the current tournament
+        // if there are 8 teams in the tournament, set its status to upcoming
         int teamCount = template.queryForObject("SELECT COUNT(*) FROM tournament_team WHERE tournament_id = ?", Integer.class, tournamentId);
         if (teamCount == 8) {
-            // Update tournament status to "upcoming"
             template.update("UPDATE tournament SET status = 'Upcoming' WHERE tournament_id = ?", tournamentId);
         }
     }
 
-    public void changeTournamentStatusToUpcoming () {
-
-    }
-
-
-    // 6. deletes team by ID
+    // delete a team by team id
     @Override
     public void removeTeam(String status, int tournamentId, int teamId) {
-
         String sqlForRemove = "DELETE FROM tournament_team WHERE team_id = ?;" +
                 "DELETE FROM team_request WHERE team_id = ?;";
         template.update(sqlForRemove, teamId, teamId);
+
+        // if the status is upcoming, change it to open
         if (status.equals("Upcoming")) {
             String sql = "UPDATE tournament SET status = 'Open' WHERE tournament_id = ?";
             template.update(sql, tournamentId);
@@ -155,7 +147,7 @@ public class JdbcTeamDao implements TeamDAO{
 
     }
 
-    // 7. can edit the team name
+    // edit the team name
     @Override
     public void editTeam(Team teamToEdit) {
         // can target by name instead of ID
@@ -166,10 +158,9 @@ public class JdbcTeamDao implements TeamDAO{
         }
     }
 
-    // 8. Removes a team member and also deletes their invites/requests associated with that team
+    // remove a team member as team leader
     @Override
     public void removeTeamMember(int userId, int teamId, String teamCaptainUsername) {
-
         if (isTeamCaptain(teamId, teamCaptainUsername)) {
             String updateUsersSql = "UPDATE users SET team_id = NULL WHERE user_id = ?";
             template.update(updateUsersSql, userId);
@@ -181,14 +172,14 @@ public class JdbcTeamDao implements TeamDAO{
         }
     }
 
-    // Service method that is used in the method above
+    // service method that is used in the method above
     private boolean isTeamCaptain(int teamId, String teamCaptainUsername) {
         String getTeamCaptainSql = "SELECT created_by FROM team WHERE team_id = ?";
         String teamCaptain = template.queryForObject(getTeamCaptainSql, String.class, teamId);
         return teamCaptain.equals(teamCaptainUsername);
     }
 
-    // 9. Used to filter through all teams that are open to public
+    // filter teams that are open for a specific tournament
     @Override
     public List<Team> filterOpenTeams(int tournament_id, String searchTerm) {
         List<Team> teamList = new ArrayList<>();
@@ -210,11 +201,13 @@ public class JdbcTeamDao implements TeamDAO{
         return teamList;
     }
 
+    // assign new captain to a team and delete all pending requests
     @Override
     public void assignCaptain(int teamId, String username) {
-        String sql = "UPDATE team SET created_by = ? WHERE team_id = ?;" +
-                "DELETE FROM team_request WHERE team_id = ? AND status = 'Pending'";
-        template.update(sql, username, teamId, teamId);
+        String updateSql = "UPDATE team SET created_by = ? WHERE team_id = ?;";
+        template.update(updateSql, username, teamId);
+        String deleteSql = "DELETE FROM team_request WHERE team_id = ? AND status = 'Pending'";
+        template.update(deleteSql, teamId);
     }
 
 }

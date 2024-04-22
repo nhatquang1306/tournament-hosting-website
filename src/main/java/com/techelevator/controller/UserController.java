@@ -19,14 +19,19 @@ public class UserController {
         this.dao = dao;
     }
 
+    // get user by user id
     @RequestMapping(path = "/user/{id}", method = RequestMethod.GET)
     public User getByUserId(@PathVariable int id) {
         return dao.getUserById(id);
     }
+
+    // get all users for a team
     @RequestMapping(path = "/users/{id}", method = RequestMethod.GET)
     public List<User> getUsersByTeamId(@PathVariable int id) {
         return dao.findByTeamId(id);
     }
+
+    // let user leave their team
     @RequestMapping(path = "/user/leave/{status}", method = RequestMethod.PUT)
     public void leaveTeam(Principal principal, @RequestBody Team team, @PathVariable String status) {
         dao.leaveTeam(principal.getName(), team, status);
